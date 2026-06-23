@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FacturaCO
 
-## Getting Started
+Generador gratuito de facturas para Colombia. Crea facturas de venta, cuentas de
+cobro y cotizaciones en PDF, con cálculo automático de IVA, INC, ICA, retenciones
+y dígito de verificación del NIT. **Fase 1 (MVP) — sin backend, datos en el navegador.**
 
-First, run the development server:
+> ⚠️ Genera la representación gráfica (PDF) de una factura. NO es proveedor
+> tecnológico DIAN: no genera XML UBL 2.1, no firma, no transmite ni genera CUFE.
+
+## Cómo correrlo
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd facturaco
+npm install
+npm run dev        # http://localhost:3000
+npm run build      # build de producción
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Next.js 16** (App Router, Turbopack) · React 19 · TypeScript
+- **Tailwind v4** + primitivas UI propias (estilo shadcn, en `src/components/ui`)
+- **Zustand** (con `persist` a localStorage) para el formulario multi-step
+- **Zod** para validación por paso
+- **@react-pdf/renderer** para el PDF (texto seleccionable, render cliente)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Estructura
 
-## Learn More
+```
+src/
+  app/
+    page.tsx              Landing (SEO, FAQ, disclaimer)
+    generar/page.tsx      Formulario multi-step + preview en vivo
+    vista-previa/page.tsx Visor PDF + descarga
+  components/
+    invoice/              Steps 1-5, InvoicePreview (HTML), InvoicePDF (@react-pdf)
+    ui/                   Primitivas (Button, Input, Select, Switch, …)
+    Disclaimer.tsx
+  lib/
+    types.ts  constants.ts  calculator.ts  validators.ts  store.ts  utils.ts
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Lógica de negocio implementada
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- DV del NIT (módulo 11, factores primos DIAN), auto-calculado.
+- Cálculo en tiempo real: subtotales, descuentos, IVA/INC/ICA, ReteFuente/ReteIVA/ReteICA.
+- Número a letras en español colombiano (`… PESOS M/CTE`).
+- Reglas: no-responsable IVA → solo "Excluido"; exportación → IVA 0%; fecha de
+  expedición ≤ hoy; vencimiento ≥ expedición; consecutivo dentro de rango de
+  resolución; bases mínimas de retención en UVT (aviso).
+- Persistencia en localStorage: perfil del emisor, clientes frecuentes, último
+  consecutivo por prefijo.
+- Watermark "COTIZACIÓN" / "CUENTA DE COBRO" según el tipo de documento.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Fuera de alcance (Fase 2/3)
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Auth/Supabase, historial "Mis Facturas", envío por email, templates premium,
+multimoneda TRM, API, notas crédito/débito, PWA.
